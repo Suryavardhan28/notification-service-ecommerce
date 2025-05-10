@@ -7,10 +7,8 @@ const { createNotification } = require("../services/notificationService");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const logger = require("../config/logger");
-const USER_SERVICE_URL =
-    process.env.USER_SERVICE_URL || "http://localhost:8081";
-const ORDER_SERVICE_URL =
-    process.env.ORDER_SERVICE_URL || "http://localhost:8083";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL;
+const ORDER_SERVICE_URL = process.env.ORDER_SERVICE_URL;
 const EXCHANGE_NAME = "ecommerce_events";
 
 let channel;
@@ -28,6 +26,17 @@ const connectToRabbitMQ = async () => {
         // Create the exchange if it doesn't exist
         await channel.assertExchange(EXCHANGE_NAME, "topic", { durable: true });
         logger.info(" Exchange asserted:", EXCHANGE_NAME);
+
+        // Handle connection errors
+        connection.on("error", (err) => {
+            logger.error("RabbitMQ connection error:", err);
+            setTimeout(connectToRabbitMQ, 5000);
+        });
+
+        connection.on("close", () => {
+            logger.info("Connection to RabbitMQ closed, reconnecting...");
+            setTimeout(connectToRabbitMQ, 5000);
+        });
     } catch (error) {
         logger.error(" Failed to connect to RabbitMQ:", error);
         throw error;
@@ -41,66 +50,71 @@ const setupQueues = async () => {
     try {
         logger.info(" Setting up queues...");
 
-        // Create a queue for this service
-        const { queue } = await channel.assertQueue("", { exclusive: true });
-        logger.info(" Created queue:", queue);
+        // Create a durable queue for all notifications
+        const queueName = "notification-events";
+        await channel.assertQueue(queueName, {
+            durable: true,
+            arguments: {
+                "x-message-ttl": 1000 * 60 * 60 * 24 * 7, // 7 days TTL
+                "x-dead-letter-exchange": "dlx", // Dead letter exchange for failed messages
+            },
+        });
 
-        // Bind the queue to the exchange for different routing patterns
-        const bindings = [
-            { pattern: "order.created" },
-            { pattern: "order.updated" },
-            { pattern: "order.cancelled" },
-            { pattern: "payment.successful" },
-            { pattern: "payment.failed" },
+        // Bind to all relevant events
+        const routingPatterns = [
+            "order.*", // All order events
+            "payment.*", // All payment events
         ];
 
-        for (const binding of bindings) {
-            await channel.bindQueue(queue, EXCHANGE_NAME, binding.pattern);
-            logger.info(
-                " Bound queue to exchange with pattern:",
-                binding.pattern
-            );
+        for (const pattern of routingPatterns) {
+            await channel.bindQueue(queueName, EXCHANGE_NAME, pattern);
+            logger.info(` Bound queue ${queueName} to pattern ${pattern}`);
         }
 
-        // Consume messages
-        channel.consume(queue, async (msg) => {
-            if (msg) {
-                try {
-                    const content = JSON.parse(msg.content.toString());
-                    const routingKey = msg.fields.routingKey;
-                    logger.info("Received message:", {
-                        routingKey,
-                        content: JSON.stringify(content, null, 2),
-                    });
+        // Set up consumer
+        channel.consume(
+            queueName,
+            async (msg) => {
+                if (msg) {
+                    try {
+                        const content = JSON.parse(msg.content.toString());
+                        const routingKey = msg.fields.routingKey;
+                        logger.info("Received message:", {
+                            routingKey,
+                            content: JSON.stringify(content, null, 2),
+                        });
 
-                    // Route the message to the appropriate handler
-                    switch (routingKey) {
-                        case "order.created":
-                            await handleOrderCreated(content);
-                            break;
-                        case "order.updated":
-                            await handleOrderUpdated(content);
-                            break;
-                        case "order.cancelled":
-                            await handleOrderCancelled(content);
-                            break;
-                        case "payment.successful":
-                            await handlePaymentSuccessful(content);
-                            break;
-                        case "payment.failed":
-                            await handlePaymentFailed(content);
-                            break;
-                        default:
-                            logger.warn("Unknown routing key:", routingKey);
+                        // Route the message to the appropriate handler
+                        switch (routingKey) {
+                            case "order.created":
+                                await handleOrderCreated(content);
+                                break;
+                            case "order.updated":
+                                await handleOrderUpdated(content);
+                                break;
+                            case "order.cancelled":
+                                await handleOrderCancelled(content);
+                                break;
+                            case "payment.successful":
+                                await handlePaymentSuccessful(content);
+                                break;
+                            case "payment.failed":
+                                await handlePaymentFailed(content);
+                                break;
+                            default:
+                                logger.warn("Unknown routing key:", routingKey);
+                        }
+
+                        channel.ack(msg);
+                    } catch (error) {
+                        logger.error(" Error processing message:", error);
+                        // Negative acknowledge with requeue false after max retries
+                        channel.nack(msg, false, false);
                     }
-
-                    channel.ack(msg);
-                } catch (error) {
-                    logger.error(" Error processing message:", error);
-                    channel.nack(msg);
                 }
-            }
-        });
+            },
+            { noAck: false }
+        ); // Enable manual acknowledgment
 
         logger.info(" Queue setup completed");
     } catch (error) {

@@ -6,8 +6,7 @@ const { sendNotificationEmail } = require("../services/emailService");
 const logger = require("../config/logger");
 
 // User service URL
-const USER_SERVICE_URL =
-    process.env.USER_SERVICE_URL || "http://localhost:8081";
+const USER_SERVICE_URL = process.env.USER_SERVICE_URL;
 
 /**
  * @desc    Create a new notification
@@ -137,14 +136,48 @@ const markAsRead = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const markAllNotificationsAsRead = catchAsync(async (req, res) => {
-    await Notification.updateMany(
-        { user: req.user._id, read: false },
+    // Log important information for debugging
+    logger.info("Marking all notifications as read", {
+        userId: req.user.id,
+        userIdType: typeof req.user.id,
+        user: req.user,
+        requestBody: req.body,
+    });
+
+    // Try both _id and id to see which one works
+    const result = await Notification.updateMany(
+        { user: req.user.id, read: false },
         { read: true, readAt: new Date() }
     );
+
+    logger.info("Update result:", {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount,
+        acknowledged: result.acknowledged,
+    });
+
+    // If no documents were matched, try to find if any notifications exist for this user
+    if (result.matchedCount === 0) {
+        const userNotifications = await Notification.countDocuments({
+            user: req.user.id,
+        });
+        logger.info(
+            `Found ${userNotifications} total notifications for user ${req.user.id}`
+        );
+
+        const unreadCount = await Notification.countDocuments({
+            user: req.user.id,
+            read: false,
+        });
+        logger.info(
+            `Found ${unreadCount} unread notifications for user ${req.user.id}`
+        );
+    }
 
     res.json({
         status: "success",
         message: "All notifications marked as read",
+        modifiedCount: result.modifiedCount,
     });
 });
 

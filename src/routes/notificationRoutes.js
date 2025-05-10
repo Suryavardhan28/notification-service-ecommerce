@@ -6,6 +6,7 @@ const {
     deleteNotification,
     getUnreadCount,
     getNotificationStats,
+    markAllNotificationsAsRead,
 } = require("../controllers/notificationController");
 const {
     extractUserFromToken,
@@ -20,6 +21,7 @@ router.use(extractUserFromToken);
 
 // Routes that require authentication
 router.get("/", getNotifications);
+router.put("/read-all", markAllNotificationsAsRead);
 router.put("/:id/read", markAsRead);
 router.delete("/:id", deleteNotification);
 router.get("/unread/count", getUnreadCount);

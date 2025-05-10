@@ -1,13 +1,13 @@
-FROM node:14-alpine
+FROM node:18-alpine
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --omit=dev
 
 COPY . .
 
 EXPOSE 8085
 
-CMD ["npm", "start"] 
+CMD ["node", "src/server.js"] 

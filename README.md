@@ -62,51 +62,6 @@ The Notification Service processes events from the Order and Payment services an
     npm start
     ```
 
-## Deployment
-
-### Docker Deployment
-
-1. **Build the Image**
-
-    ```bash
-    docker build -t notification-service:1.0 .
-    ```
-
-2. **Run the Container**
-    ```bash
-    docker run -p 8085:8085 \
-      -e MONGODB_URI=mongodb://mongodb:27017/notificationdb \
-      -e RABBITMQ_URL=amqp://rabbitmq:5672 \
-      -e USER_SERVICE_URL=http://user-service:8081 \
-      -e ORDER_SERVICE_URL=http://order-service:8083 \
-      -e EMAIL_SERVICE=smtp \
-      -e EMAIL_HOST=smtp.mailtrap.io \
-      -e EMAIL_PORT=2525 \
-      -e EMAIL_USER=your_mailtrap_user \
-      -e EMAIL_PASS=your_mailtrap_password \
-      -e EMAIL_FROM=noreply@ecommerce.com \
-      notification-service:1.0
-    ```
-
-### Kubernetes Deployment
-
-1. **Create Namespace**
-
-    ```bash
-    kubectl create namespace ecommerce
-    ```
-
-2. **Apply Kubernetes Manifests**
-
-    ```bash
-    kubectl apply -f kubernetes/
-    ```
-
-3. **Verify Deployment**
-    ```bash
-    kubectl get all -n ecommerce -l app=notification-service
-    ```
-
 ## API Documentation
 
 ### Notification Endpoints
@@ -155,23 +110,3 @@ The service listens for the following events from RabbitMQ:
     - Verify User Service URL configuration
     - Verify Order Service URL configuration
     - Check service connectivity
-
-### Debug Commands
-
-```bash
-# Check pod status
-kubectl get pods -n ecommerce -l app=notification-service
-
-# Check service logs
-kubectl logs -f deployment/notification-service -n ecommerce
-
-# Check RabbitMQ connection
-kubectl exec -it deployment/notification-service -n ecommerce -- rabbitmqctl status
-
-# Check MongoDB connection
-kubectl exec -it deployment/notification-service -n ecommerce -- mongosh
-```
-
-## License
-
-MIT License

@@ -6,8 +6,8 @@ const path = require("path");
 const logger = require("../config/logger");
 // Create reusable transporter object using SMTP
 const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || "smtp.ethereal.email",
-    port: process.env.EMAIL_PORT || 587,
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
     secure: false,
     auth: {
         user: process.env.EMAIL_USER,
@@ -34,16 +34,24 @@ transporter.verify(function (error, success) {
 
 // Generate service token for internal service calls
 const generateServiceToken = () => {
+    const serviceSecret = process.env.SERVICE_SECRET;
+
+    logger.info(
+        "Generating service token with secret",
+        serviceSecret === process.env.SERVICE_SECRET
+            ? "from environment"
+            : "using fallback"
+    );
+
     return jwt.sign(
         {
             service: "notification-service",
             type: "service",
         },
-        process.env.SERVICE_SECRET,
+        serviceSecret,
         { expiresIn: "1h" }
     );
 };
-
 /**
  * Send an email using a template
  * @param {Object} options - Email options
