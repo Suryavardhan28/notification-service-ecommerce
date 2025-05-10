@@ -1,0 +1,173 @@
+{
+    "info": {
+        "name": "Notification Service",
+        "description": "Collection for the Notification Service API endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get Notifications",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications"]
+                }
+            }
+        },
+        {
+            "name": "Mark All Notifications as Read",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications/read-all",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications", "read-all"]
+                }
+            }
+        },
+        {
+            "name": "Mark Notification as Read",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications/:id/read",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications", ":id", "read"],
+                    "variable": [
+                        {
+                            "key": "id",
+                            "value": "notification_id"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Delete Notification",
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications/:id",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications", ":id"],
+                    "variable": [
+                        {
+                            "key": "id",
+                            "value": "notification_id"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Unread Count",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications/unread/count",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications", "unread", "count"]
+                }
+            }
+        },
+        {
+            "name": "Get Notification Stats (Admin)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "x-service-token",
+                        "value": "{{service_token}}",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/notifications/admin/stats",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "notifications", "admin", "stats"]
+                }
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8085"
+        },
+        {
+            "key": "token",
+            "value": "your_jwt_token"
+        },
+        {
+            "key": "service_token",
+            "value": "your_service_token"
+        }
+    ]
+}
